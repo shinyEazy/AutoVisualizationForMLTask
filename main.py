@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 import sys
 import argparse
 import signal
+import json
 
 warnings.filterwarnings("ignore")
 
@@ -50,13 +51,16 @@ class CodeGenerationAgent:
     def __init__(self):
         self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
         self.prompt_template = PromptTemplate(
-            input_variables=["analysis", "error_log"],
+            input_variables=["analysis", "error_log", "api_info"],
             template="""
             You are an expert at generating Gradio code based on requirements analysis.
             
             Previous analysis: {analysis}
             
             {error_log}
+            
+            External prediction API information (if provided):
+            {api_info}
             
             Generate a complete, runnable Gradio app in a single Python file. Follow these guidelines:
             1. Use the latest gradio library with Blocks API (not Interface)
@@ -71,17 +75,18 @@ class CodeGenerationAgent:
                    # Add components here
                    ...
                demo.launch()
+            9. If API information is provided above, DO NOT mock. Implement a predict() that calls the HTTP API using requests with multipart/form-data. Use the field name images and send the uploaded file as raw bytes. Set the input image component to gr.Image(type="filepath") so you receive a filesystem path. Open the file in binary mode and build files with key images containing the file data. Use requests.post(url, files=files, timeout=15) and close the file handle after. Try response.json() first; if it fails, fall back to response.text and display it. Include graceful error handling and timeouts. If the API probe failed due to missing test files, still implement the API call correctly - the user will provide their own images.
             
             Return only the Python code without any explanations or markdown formatting.
             """
         )
         self.chain = LLMChain(llm=self.llm, prompt=self.prompt_template)
     
-    def generate_code(self, analysis, error_log=""):
+    def generate_code(self, analysis, error_log="", api_info=""):
         if error_log:
             error_log = f"Previous execution errors that need to be fixed:\n{error_log}"
         
-        response = self.chain.run(analysis=analysis, error_log=error_log)
+        response = self.chain.run(analysis=analysis, error_log=error_log, api_info=api_info)
         # Extract code from response (in case the model adds explanations)
         code_match = re.search(r"```python\n(.*?)\n```", response, re.DOTALL)
         if code_match:
@@ -180,6 +185,55 @@ class GradioAppManager:
                 return f"Failed to stop app: {str(e)}"
         return "No Gradio app running!"
 
+# Agent 3: External API Probe Agent
+class ExternalAPIProbeAgent:
+    def __init__(self, default_url: str = "http://136.60.217.200:50318/predict", default_image_path: str = r"C:/Users/ASUS/Downloads/images.webp"):
+        self.default_url = default_url
+        self.default_image_path = default_image_path
+
+    def probe(self, url: str | None = None, image_path: str | None = None) -> str:
+        target_url = url or self.default_url
+        path = image_path or self.default_image_path
+        
+        # Check if image file exists
+        if not os.path.exists(path):
+            return json.dumps({
+                "url": target_url, 
+                "image_path": path, 
+                "error": f"Image file not found: {path}",
+                "note": "API expects multipart form-data with field 'images' containing image file bytes"
+            })
+        
+        # Build curl command - use curl.exe on Windows to avoid PowerShell alias
+        # Convert Windows path to forward slashes for curl
+        curl_path = path.replace('\\', '/')
+        if os.name == 'nt':
+            cmd = [
+                "curl.exe",
+                "-X", "POST", target_url,
+                "-F", f"images=@{curl_path}"
+            ]
+        else:
+            cmd = [
+                "curl",
+                "-X", "POST", target_url,
+                "-F", f"images=@{curl_path}"
+            ]
+        try:
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=30)
+            stdout = (result.stdout or "").strip()
+            stderr = (result.stderr or "").strip()
+            info = {"url": target_url, "image_path": path, "curl_path": curl_path, "stdout": stdout, "stderr": stderr, "returncode": result.returncode}
+            # Try parse JSON if possible
+            try:
+                if stdout:
+                    info["json"] = json.loads(stdout)
+            except Exception:
+                pass
+            return json.dumps(info, ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"url": target_url, "image_path": path, "curl_path": curl_path, "error": str(e)})
+
 # Custom Prompt Template for the Orchestrator Agent
 class CustomPromptTemplate(StringPromptTemplate):
     template: str
@@ -205,6 +259,7 @@ class OrchestratorAgent:
         self.requirements_agent = RequirementsAnalysisAgent()
         self.code_agent = CodeGenerationAgent()
         self.app_manager = GradioAppManager()
+        self.api_probe_agent = ExternalAPIProbeAgent()
         
         tools = [
             Tool(
@@ -267,8 +322,14 @@ class OrchestratorAgent:
     
     def generate_and_test_code(self, analysis):
         max_attempts = 3
+        # Probe external API once to gather response shape
+        try:
+            api_probe_info = self.api_probe_agent.probe()
+        except Exception as e:
+            api_probe_info = f"API probe failed: {str(e)}"
+        
         for attempt in range(max_attempts):
-            code = self.code_agent.generate_code(analysis, self.app_manager.error_log)
+            code = self.code_agent.generate_code(analysis, self.app_manager.error_log, api_probe_info)
             result = self.app_manager.run_gradio_code(code)
             
             if "Error" not in result and "error" not in result.lower():
