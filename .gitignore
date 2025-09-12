@@ -3,3 +3,4 @@ venv/
 .gradio/
 .gradio_app.pid
 __pycache__/
+app.py

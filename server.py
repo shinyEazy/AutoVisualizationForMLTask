@@ -7,13 +7,18 @@ app = FastAPI()
 async def predict():
     response = {
         "status": "success",
-        "infer_time": 0.11,
+        "infer_time": 0.5484125036746264,
         "predictions": [
             {
-                "key": 1,
-                "class": "dog",
-                "confidence": 0.98
+                "key": 0,
+                "class": 0,
+                "confidence": 0.94629967212677
             },
+            {
+                "key": 1,
+                "class": 1,
+                "confidence": 0.6092917323112488
+            }
         ]
     }
     return JSONResponse(content=response)

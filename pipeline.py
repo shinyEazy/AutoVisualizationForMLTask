@@ -5,7 +5,7 @@ import os
 
 load_dotenv()
 
-lm = dspy.LM(model="gpt-4o-mini", cache=False)
+lm = dspy.LM(model="gpt-4.1-nano", cache=False, max_tokens=16000)
 dspy.settings.configure(lm=lm)
 
 class TaskAnalysis(dspy.Signature):
@@ -78,4 +78,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-# python .\main.py --task_name "MULTIMODAL_CLASSIFICATION22" --input_type "image, text" --api_endpoint "127.0.0.1/predict"
+# python .\pipeline.py --task_name "MULTIMODAL_CLASSIFICATION" --input_type "image, text" --api_endpoint "127.0.0.1/predict"
