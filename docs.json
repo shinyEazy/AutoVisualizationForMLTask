@@ -1,0 +1,348 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "MultimodalClassificationService",
+    "version": "None",
+    "description": "# MultimodalClassificationService:dev\n\n[![pypi_status](https://img.shields.io/badge/BentoML-1.4.2-informational)](https://pypi.org/project/BentoML)\n[![documentation_status](https://readthedocs.org/projects/bentoml/badge/?version=latest)](https://docs.bentoml.com/)\n[![join_slack](https://badgen.net/badge/Join/BentoML%20Slack/cyan?icon=slack)](https://l.bentoml.com/join-slack-swagger)\n[![BentoML GitHub Repo](https://img.shields.io/github/stars/bentoml/bentoml?style=social)](https://github.com/bentoml/BentoML)\n[![Twitter Follow](https://img.shields.io/twitter/follow/bentomlai?label=Follow%20BentoML&style=social)](https://twitter.com/bentomlai)\n\nThis is a Machine Learning Service created with BentoML.\n\n## Help\n\n* [📖 Documentation](https://docs.bentoml.com/en/latest/): Learn how to use BentoML.\n* [💬 Community](https://l.bentoml.com/join-slack-swagger): Join the BentoML Slack community.\n* [🐛 GitHub Issues](https://github.com/bentoml/BentoML/issues): Report bugs and feature requests.\n* Tip: you can also [customize this README](https://docs.bentoml.com/en/latest/reference/bentoml/bento-build-options.html#description).\n",
+    "contact": {
+      "name": "BentoML Team",
+      "email": "contact@bentoml.com"
+    }
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "tags": ["Infrastructure"],
+        "description": "Health check endpoint. Expecting an empty response with status code \u003Ccode\u003E200\u003C/code\u003E when the service is in health state. The \u003Ccode\u003E/healthz\u003C/code\u003E endpoint is \u003Cb\u003Edeprecated\u003C/b\u003E. (since Kubernetes v1.16)"
+      }
+    },
+    "/livez": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "tags": ["Infrastructure"],
+        "description": "Health check endpoint for Kubernetes. Healthy endpoint responses with a \u003Ccode\u003E200\u003C/code\u003E OK status."
+      }
+    },
+    "/readyz": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "tags": ["Infrastructure"],
+        "description": "A \u003Ccode\u003E200\u003C/code\u003E OK status from \u003Ccode\u003E/readyz\u003C/code\u003E endpoint indicated the service is ready to accept traffic. From that point and onward, Kubernetes will use \u003Ccode\u003E/livez\u003C/code\u003E endpoint to perform periodic health checks."
+      }
+    },
+    "/metrics": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "tags": ["Infrastructure"],
+        "description": "Prometheus metrics endpoint. The \u003Ccode\u003E/metrics\u003C/code\u003E responses with a \u003Ccode\u003E200\u003C/code\u003E. The output can then be used by a Prometheus sidecar to scrape the metrics of the service."
+      }
+    },
+    "/evaluate": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidArgument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Service APIs"],
+        "x-bentoml-name": "evaluate",
+        "description": "",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "title": "Input",
+                "required": ["image_zip", "labels_csv"],
+                "properties": {
+                  "image_zip": {
+                    "description": "A ZIP file containing all the images for multimodal classification task.",
+                    "format": "binary",
+                    "title": "Image Zip",
+                    "type": "string"
+                  },
+                  "labels_csv": {
+                    "description": "A csv file for multimodal classification task.",
+                    "format": "binary",
+                    "title": "Labels Csv",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "MultimodalClassificationService__evaluate"
+      }
+    },
+    "/predict": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidArgument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Service APIs"],
+        "x-bentoml-name": "predict",
+        "description": "",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "title": "Input",
+                "required": ["image_zip", "labels_csv"],
+                "properties": {
+                  "image_zip": {
+                    "description": "A ZIP file containing all the images for multimodal classification task.",
+                    "format": "binary",
+                    "title": "Image Zip",
+                    "type": "string"
+                  },
+                  "labels_csv": {
+                    "description": "A csv file for multimodal classification task.",
+                    "format": "binary",
+                    "title": "Labels Csv",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "MultimodalClassificationService__predict"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Service APIs",
+      "description": "BentoML Service API endpoints for inference."
+    },
+    {
+      "name": "Infrastructure",
+      "description": "Common infrastructure endpoints for observability."
+    }
+  ],
+  "components": {
+    "schemas": {
+      "evaluate__Input": {
+        "type": "object",
+        "title": "evaluate__Input",
+        "required": ["image_zip", "labels_csv"],
+        "properties": {
+          "image_zip": {
+            "description": "A ZIP file containing all the images for multimodal classification task.",
+            "format": "binary",
+            "title": "Image Zip",
+            "type": "file"
+          },
+          "labels_csv": {
+            "content_type": "text/csv",
+            "description": "A csv file for multimodal classification task.",
+            "format": "text",
+            "title": "Labels Csv",
+            "type": "file"
+          }
+        }
+      },
+      "predict__Input": {
+        "type": "object",
+        "title": "predict__Input",
+        "required": ["image_zip", "labels_csv"],
+        "properties": {
+          "image_zip": {
+            "description": "A ZIP file containing all the images for multimodal classification task.",
+            "format": "binary",
+            "title": "Image Zip",
+            "type": "file"
+          },
+          "labels_csv": {
+            "content_type": "text/csv",
+            "description": "A csv file for multimodal classification task.",
+            "format": "text",
+            "title": "Labels Csv",
+            "type": "file"
+          }
+        }
+      },
+      "TaskStatusResponse": {
+        "type": "object",
+        "title": "TaskStatusResponse",
+        "required": ["task_id", "status", "created_at", "executed_at"],
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": ["in_progress", "success", "failure", "cancelled"],
+            "title": "Status",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "executed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executed At"
+          }
+        }
+      },
+      "InvalidArgument": {
+        "type": "object",
+        "title": "InvalidArgument",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Message"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Error Detail"
+          }
+        },
+        "description": "Bad Request"
+      },
+      "NotFound": {
+        "type": "object",
+        "title": "NotFound",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Message"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Error Detail"
+          }
+        },
+        "description": "Not Found"
+      },
+      "InternalServerError": {
+        "type": "object",
+        "title": "InternalServerError",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Message"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Error Detail"
+          }
+        },
+        "description": "Internal Server Error"
+      }
+    }
+  }
+}

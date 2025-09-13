@@ -4,3 +4,4 @@ venv/
 .gradio_app.pid
 __pycache__/
 app.py
+index.html
