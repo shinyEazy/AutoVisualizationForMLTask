@@ -1,4 +1,5 @@
 import os
+import time
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
@@ -83,93 +84,99 @@ API_RESPONSE_SAMPLE = """
 # Initialize the language model
 llm = ChatOpenAI(
     model_name="gpt-5-nano",
-    temperature=1
+    temperature=1,
 )
 
-# Define a prompt template
 prompt_template = PromptTemplate(
     input_variables=["input", "API_ENDPOINT", "API_INFO", "API_REQUEST_SAMPLE", "API_RESPONSE_SAMPLE"],
     template="""
-Create a clean, modern, and intuitive HTML page designed to visualize API input and output data for machine learning tasks, emphasizing clarity and interactivity. The page should focus on presenting input data (e.g., multiple images, tabular data, or text) and corresponding output data (e.g., predictions, labels, or confidence scores) in a structured, easy-to-understand format. Ensure the layout is responsive, accessible, and visually appealing, using a card-based or row-based design to organize inputs and outputs clearly. Incorporate semantic colors, subtle animations, and interactive elements to enhance user experience while maintaining simplicity.
+Generate a clean, modern HTML interface focused solely on data visualization for ML API inputs and outputs, with a strict vertical layout and no horizontal spreading.
 
-Use this information:  
-API ENDPOINT: {API_ENDPOINT}  
-API SCHEMA: {API_INFO}  
-API REQUEST SAMPLE: {API_REQUEST_SAMPLE}  
-API RESPONSE SAMPLE: {API_RESPONSE_SAMPLE}
+## API Context
+- Endpoint: {API_ENDPOINT}
+- Schema: {API_INFO}
+- Request Sample: {API_REQUEST_SAMPLE}
+- Response Sample: {API_RESPONSE_SAMPLE}
 
-The UI should include:  
-1. **Header Section**:  
-   - Display the API endpoint and a clear title (e.g., "API Data Visualizer").  
-   - Include a status indicator (e.g., API connection status).  
+## Core Data Visualization Focus
+### 1. Input Data Rendering
+Based on the API schema, identify the input type and render it appropriately:
+- ZIP Files: Implement a drag-and-drop upload zone that displays the file count and total size after upload.
+- Tabular Data: Include a file upload with an immediate table preview in a scrollable container with fixed height and vertical scrolling. (if cell is to long, use truncate for )
+- Image Data: Use a drag-and-drop upload with image previews in a carousel format for multiple images, scaling images to fit neatly.
 
-2. **Input Visualization Section**:  
-   - Support multiple input types (e.g., images, CSV, text) displayed in a grid or row-based layout.  
-   - For images, show thumbnails in a responsive grid or rows with drag-and-drop upload support.  
-   - For tabular data, display an interactive table with sorting and filtering.  
-   - Provide real-time validation feedback (e.g., file type, size) with icons or color cues.  
-   - Show a summary of input data (e.g., number of images, rows in CSV, or text length).  
+### 2. Output Data Rendering
+Based on the response sample, display output data in the most suitable format:
+- If input contain tabular and response is label for each row, then combine those into a table and display it.
 
-3. **Output Visualization Section**:  
-   - Display outputs (e.g., labels, predictions, confidence scores) directly aligned with corresponding inputs (e.g., labels below each image in a row).  
-   - Use visual indicators like progress bars, badges, or color-coded labels for predictions (e.g., green for positive, red for negative).  
-   - For JSON outputs, include an expandable/collapsible JSON viewer.  
-   - Support interactive charts (e.g., bar charts for confidence scores) for numerical outputs.  
+### 3. Simple Interactive Features
+Include only essential interactions derived from the API schema:
+- Predict Button: A button to trigger the API call.
+- Clear Button: Reset all inputs and outputs.
+- Download Results: Allow downloading of output data.
+- Copy Data: Provide buttons to copy JSON output.
 
-4. **Interactive Features**:  
-   - A "Predict" button with loading states and progress indicators.  
-   - Clickable inputs (e.g., image thumbnails) to trigger predictions or display details.  
-   - Copy-to-clipboard functionality for API request/response data.  
-   - Export options for output data (e.g., CSV, JSON).  
-   - Collapsible sections for detailed inspection of inputs/outputs.  
+### 4. Clean Design System
+- Layout: Use a strict single-column layout with `display: flex; flex-direction: column;`. Stack all sections vertically with no horizontal splits. Each section should be inside a card with consistent padding and spacing.
+- Colors: 
+  - Blue for input sections and interactive actions.
+  - Green for output sections and success states.
+  - Red for errors and warnings.
+  - Gray for neutral text and borders.
+- Typography: Use font mono-space with clear size hierarchy and high contrast for readability.
+- Responsiveness: Ensure the interface works on mobile and desktop, with vertical scrolling for any overflow content.
 
-5. **Modern Design Elements**:  
-   - Use a clean, consistent typography with clear hierarchy (e.g., sans-serif fonts like Roboto).  
-   - Apply a semantic color scheme (e.g., blue for inputs, green for outputs, red for errors).  
-   - Use card-based or row-based layouts with subtle shadows, borders, and hover effects.  
-   - Include icons (e.g., upload, success, error) for visual clarity.  
-   - Add smooth transitions/animations for button clicks, loading states, and collapsible sections.  
+### 5. Technical Requirements
+- HTML5: Use semantic elements (e.g., <section>, <article>) for better structure.
+- Inline Styles: Implement all CSS inline to keep the HTML self-contained; no external libraries or stylesheets, use tailwind CSS only, don't use global CSS.
+- JavaScript: Use minimal inline JavaScript for interactivity, such as handling file uploads and API calls. Avoid complex frameworks.
+- Performance: Optimize for fast loading and efficient rendering of large datasets without lag.
+- Make sure: `max-width: 1240px;` is set in the root element.
 
-6. **Responsive & Accessible Design**:  
-   - Ensure a mobile-first layout that adapts to different screen sizes.  
-   - Maintain high contrast ratios for readability and accessibility.  
-   - Support keyboard navigation and screen readers with proper ARIA attributes.  
-   - Use touch-friendly elements (e.g., larger buttons for mobile).  
+## User Requirements
+- Specific Request: {input}
 
-7. **Data Visualization Components**:  
-   - For multiple images, display each in a row or grid with corresponding output (e.g., predicted label) below or beside it.  
-   - For tabular data, use interactive tables with pagination and sorting.  
-   - For numerical outputs, include progress bars or simple charts (e.g., bar or pie charts).  
-   - For classification tasks, use color-coded badges or icons to indicate results.  
+## Implementation Focus
+- Data Visualization Only: Focus on rendering input and output data clearly without any charts, graphs, or statistical analysis.
+- Simple Interface: Keep the design minimal and functional.
+- API Schema Based: Create only input components specified in the API schema; avoid unnecessary elements.
+- Vertical Layout Everywhere: Enforce a vertical layout in all sections using CSS flexbox or similar for vertical flow. Use vertical scrolling for any content overflows; avoid horizontal scrolling.
 
-8. **Error Handling & Feedback**:  
-   - Show clear error messages with actionable suggestions (e.g., "Invalid file format, please upload PNG/JPEG").  
-   - Use visual indicators for success (green checkmark) or error (red alert) states.  
-   - Provide real-time feedback for invalid inputs or network issues.  
+## Example for different input types
+1. Tabular
+```html
 
-**Example Scenario**: For a machine learning task with multiple image inputs, display each image in a row with a thumbnail. Below each image, show a "Predict" button. After clicking, display the predicted label (e.g., "Cat: 95%") and confidence score (e.g., progress bar) directly below the corresponding image.
+```
 
-**Requirements**:  
-- Return raw HTML code without markdown or code blocks.  
-- Include inline CSS and JavaScript for a self-contained page.  
-- Ensure the design is simple yet visually appealing, prioritizing data clarity and interactivity.  
-- Handle dynamic inputs/outputs (e.g., variable number of images or rows) effectively.
+2. ZIP
+```html
 
-User requirement: {input}
-    """
+```
+"""
 )
 
 def run_agent(user_prompt):
-    prompt = prompt_template.format(input=user_prompt, API_ENDPOINT=API_ENDPOINT, API_INFO=API_INFO, API_REQUEST_SAMPLE=API_REQUEST_SAMPLE, API_RESPONSE_SAMPLE=API_RESPONSE_SAMPLE)
+    start_time = time.time()
+    prompt = prompt_template.format(
+        input=user_prompt,
+        API_ENDPOINT=API_ENDPOINT,
+        API_INFO=API_INFO,
+        API_REQUEST_SAMPLE=API_REQUEST_SAMPLE,
+        API_RESPONSE_SAMPLE=API_RESPONSE_SAMPLE
+    )
     response = llm.invoke(prompt)
-    return response.content
+    end_time = time.time()
+    duration = end_time - start_time
+    return response.content, duration
+
 
 if __name__ == "__main__":
-    user_prompt = "Generate a comprehensive HTML UI for the multimodal classification API endpoint"
+    user_prompt = "Generate a comprehensive HTML UI for multimodal classification task."
     try:
-        html_content = run_agent(user_prompt)
+        html_content, elapsed = run_agent(user_prompt)
         with open("index.html", 'w', encoding='utf-8') as f:
             f.write(html_content)
-        print(f"Successfully wrote response to index.html")
+        print(f"Successfully wrote to index.html")
+        print(f"Time taken: {elapsed:.2f} seconds")
     except Exception as e:
         print(f"Error writing to index.html: {str(e)}")

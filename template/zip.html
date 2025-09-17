@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ZIP Upload & Info</title>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #infoBox {
+        max-width: 1280px;
+        margin-top: 20px;
+        padding: 10px;
+        font-size: 16px;
+        text-align: center;
+        white-space: pre-line; /* preserve line breaks */
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Upload a ZIP File</h2>
+    <input type="file" id="zipFile" accept=".zip" />
+    <div id="infoBox"></div>
+
+    <script>
+      const fileInput = document.getElementById("zipFile");
+      const infoBox = document.getElementById("infoBox");
+
+      fileInput.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const jszip = new JSZip();
+        try {
+          const zip = await jszip.loadAsync(file);
+          showZipInfo(zip);
+        } catch (err) {
+          infoBox.innerHTML = "Invalid ZIP file.";
+        }
+      });
+
+      function formatBytes(bytes) {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+      }
+
+      function showZipInfo(zip) {
+        const files = Object.keys(zip.files);
+        const totalFiles = files.length;
+        let totalSize = 0;
+
+        files.forEach((filename) => {
+          const file = zip.files[filename];
+          if (!file.dir) totalSize += file._data.uncompressedSize || 0;
+        });
+
+        infoBox.innerHTML =
+          `Total files: ${totalFiles} - ` +
+          `Total size: ${formatBytes(totalSize)}`;
+      }
+    </script>
+  </body>
+</html>
