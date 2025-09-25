@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.2",
   "info": {
-    "title": "MultimodalClassificationService",
+    "title": "SemanticSegmentationService",
     "version": "None",
-    "description": "# MultimodalClassificationService:dev\n\n[![pypi_status](https://img.shields.io/badge/BentoML-1.4.2-informational)](https://pypi.org/project/BentoML)\n[![documentation_status](https://readthedocs.org/projects/bentoml/badge/?version=latest)](https://docs.bentoml.com/)\n[![join_slack](https://badgen.net/badge/Join/BentoML%20Slack/cyan?icon=slack)](https://l.bentoml.com/join-slack-swagger)\n[![BentoML GitHub Repo](https://img.shields.io/github/stars/bentoml/bentoml?style=social)](https://github.com/bentoml/BentoML)\n[![Twitter Follow](https://img.shields.io/twitter/follow/bentomlai?label=Follow%20BentoML&style=social)](https://twitter.com/bentomlai)\n\nThis is a Machine Learning Service created with BentoML.\n\n## Help\n\n* [📖 Documentation](https://docs.bentoml.com/en/latest/): Learn how to use BentoML.\n* [💬 Community](https://l.bentoml.com/join-slack-swagger): Join the BentoML Slack community.\n* [🐛 GitHub Issues](https://github.com/bentoml/BentoML/issues): Report bugs and feature requests.\n* Tip: you can also [customize this README](https://docs.bentoml.com/en/latest/reference/bentoml/bento-build-options.html#description).\n",
+    "description": "# SemanticSegmentationService:dev\n\n[![pypi_status](https://img.shields.io/badge/BentoML-1.4.2-informational)](https://pypi.org/project/BentoML)\n[![documentation_status](https://readthedocs.org/projects/bentoml/badge/?version=latest)](https://docs.bentoml.com/)\n[![join_slack](https://badgen.net/badge/Join/BentoML%20Slack/cyan?icon=slack)](https://l.bentoml.com/join-slack-swagger)\n[![BentoML GitHub Repo](https://img.shields.io/github/stars/bentoml/bentoml?style=social)](https://github.com/bentoml/BentoML)\n[![Twitter Follow](https://img.shields.io/twitter/follow/bentomlai?label=Follow%20BentoML&style=social)](https://twitter.com/bentomlai)\n\nThis is a Machine Learning Service created with BentoML.\n\n## Help\n\n* [📖 Documentation](https://docs.bentoml.com/en/latest/): Learn how to use BentoML.\n* [💬 Community](https://l.bentoml.com/join-slack-swagger): Join the BentoML Slack community.\n* [🐛 GitHub Issues](https://github.com/bentoml/BentoML/issues): Report bugs and feature requests.\n* Tip: you can also [customize this README](https://docs.bentoml.com/en/latest/reference/bentoml/bento-build-options.html#description).\n",
     "contact": {
       "name": "BentoML Team",
       "email": "contact@bentoml.com"
@@ -111,13 +111,13 @@
                 "required": ["image_zip", "labels_csv"],
                 "properties": {
                   "image_zip": {
-                    "description": "A ZIP file containing all the images for multimodal classification task.",
+                    "description": "A ZIP file containing all the images for semantic segmentation task.",
                     "format": "binary",
                     "title": "Image Zip",
                     "type": "string"
                   },
                   "labels_csv": {
-                    "description": "A csv file for multimodal classification task.",
+                    "description": "A csv file for semantic segmentation image and mask mapping.",
                     "format": "binary",
                     "title": "Labels Csv",
                     "type": "string"
@@ -127,7 +127,7 @@
             }
           }
         },
-        "operationId": "MultimodalClassificationService__evaluate"
+        "operationId": "SemanticSegmentationService__evaluate"
       }
     },
     "/predict": {
@@ -184,26 +184,94 @@
               "schema": {
                 "type": "object",
                 "title": "Input",
-                "required": ["image_zip", "labels_csv"],
+                "required": ["images"],
                 "properties": {
-                  "image_zip": {
-                    "description": "A ZIP file containing all the images for multimodal classification task.",
-                    "format": "binary",
-                    "title": "Image Zip",
-                    "type": "string"
-                  },
-                  "labels_csv": {
-                    "description": "A csv file for multimodal classification task.",
-                    "format": "binary",
-                    "title": "Labels Csv",
-                    "type": "string"
+                  "images": {
+                    "items": {
+                      "format": "binary",
+                      "type": "string"
+                    },
+                    "title": "Images",
+                    "type": "array"
                   }
                 }
               }
             }
           }
         },
-        "operationId": "MultimodalClassificationService__predict"
+        "operationId": "SemanticSegmentationService__predict"
+      }
+    },
+    "/predict_raw": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidArgument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Service APIs"],
+        "x-bentoml-name": "predict_raw",
+        "description": "",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "title": "Input",
+                "required": ["images"],
+                "properties": {
+                  "images": {
+                    "items": {
+                      "format": "binary",
+                      "type": "string"
+                    },
+                    "title": "Images",
+                    "type": "array"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "SemanticSegmentationService__predict_raw"
       }
     }
   },
@@ -230,14 +298,14 @@
         "required": ["image_zip", "labels_csv"],
         "properties": {
           "image_zip": {
-            "description": "A ZIP file containing all the images for multimodal classification task.",
+            "description": "A ZIP file containing all the images for semantic segmentation task.",
             "format": "binary",
             "title": "Image Zip",
             "type": "file"
           },
           "labels_csv": {
             "content_type": "text/csv",
-            "description": "A csv file for multimodal classification task.",
+            "description": "A csv file for semantic segmentation image and mask mapping.",
             "format": "text",
             "title": "Labels Csv",
             "type": "file"
@@ -247,20 +315,30 @@
       "predict__Input": {
         "type": "object",
         "title": "predict__Input",
-        "required": ["image_zip", "labels_csv"],
+        "required": ["images"],
         "properties": {
-          "image_zip": {
-            "description": "A ZIP file containing all the images for multimodal classification task.",
-            "format": "binary",
-            "title": "Image Zip",
-            "type": "file"
-          },
-          "labels_csv": {
-            "content_type": "text/csv",
-            "description": "A csv file for multimodal classification task.",
-            "format": "text",
-            "title": "Labels Csv",
-            "type": "file"
+          "images": {
+            "items": {
+              "format": "binary",
+              "type": "file"
+            },
+            "title": "Images",
+            "type": "array"
+          }
+        }
+      },
+      "predict_raw__Input": {
+        "type": "object",
+        "title": "predict_raw__Input",
+        "required": ["images"],
+        "properties": {
+          "images": {
+            "items": {
+              "format": "binary",
+              "type": "file"
+            },
+            "title": "Images",
+            "type": "array"
           }
         }
       },

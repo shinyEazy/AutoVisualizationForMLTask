@@ -1,13 +1,13 @@
-TASK_NAME = "Multimodal Classification"
+TASK_NAME = "Semantic Segmentation"
 
-API_ENDPOINT = "http://127.0.0.1:8000"
+API_ENDPOINT = "http://77.104.167.149:55444"
 
 API_INFO = """
 {
   "predict_endpoint": {
     "path": "/predict",
     "method": "POST",
-    "operationId": "MultimodalClassificationService__predict",
+    "operationId": "SemanticSegmentationService__predict",
     "summary": "",
     "tags": [
       "Service APIs"
@@ -19,21 +19,16 @@ API_INFO = """
             "type": "object",
             "title": "Input",
             "required": [
-              "image_zip",
-              "labels_csv"
+              "images"
             ],
             "properties": {
-              "image_zip": {
-                "description": "A ZIP file containing all the images for multimodal classification task.",
-                "format": "binary",
-                "title": "Image Zip",
-                "type": "string"
-              },
-              "labels_csv": {
-                "description": "A csv file for multimodal classification task.",
-                "format": "binary",
-                "title": "Labels Csv",
-                "type": "string"
+              "images": {
+                "items": {
+                  "format": "binary",
+                  "type": "string"
+                },
+                "title": "Images",
+                "type": "array"
               }
             }
           }
@@ -52,31 +47,13 @@ API_INFO = """
 
 API_REQUEST_SAMPLE = """
 curl -X 'POST' \
-  'http://47.186.63.142:52901/predict' \
+  'http://77.104.167.149:55444/predict' \
   -H 'accept: application/json' \
   -H 'Content-Type: multipart/form-data' \
-  -F 'image_zip=@super_small_image.zip;type=application/x-zip-compressed' \
-  -F 'labels_csv=@super_small_data.csv;type=text/csv'
+  -F 'images=@images (1).jpg;type=image/jpeg'
 """
 
-API_RESPONSE_SAMPLE = """
-{
-    "status": "success",
-    "infer_time": 0.5484125036746264,
-    "predictions": [
-        {
-            "key": 0,
-            "class": 0,
-            "confidence": 0.94629967212677
-        },
-        {
-            "key": 1,
-            "class": 1,
-            "confidence": 0.6092917323112488
-        }
-    ]
-}
-"""
+API_RESPONSE_SAMPLE = """An image."""
 
 SYSTEM_PROMPT = f"""
 You are an expert Streamlit developer specializing in clean, modern interfaces for machine learning APIs. Generate a comprehensive, user-friendly Streamlit app for data visualization and interaction.
@@ -98,7 +75,7 @@ You are an expert Streamlit developer specializing in clean, modern interfaces f
   - Tabular (CSV/Excel): `st.dataframe` with scrollable height.
   - JSON: `st.json` or `st.dataframe`.
   - Images: `st.image` with sizing.
-- **Two-Input Layout**: Use `st.columns([1, 1], gap="large")` for side-by-side uploaders/previews. Place Predict button below, full-width.
+- **Two-Input Layout (If API Schema require two type of upload then use this layout)**: Use `st.columns([1, 1], gap="large")` for side-by-side uploaders/previews. Place Predict button below, full-width.
 
 ### 2. API Interaction & Output Visualization
 - **Prediction Flow**: On button click, validate files → API call via `requests` → Show `st.spinner`/`st.progress`.
@@ -107,6 +84,7 @@ You are an expert Streamlit developer specializing in clean, modern interfaces f
   - JSON: `st.json`.
   - Images: `st.image`.
   - Merge inputs with response.
+  - If the input is tabular and the API returns per-row predictions (e.g., label and confidence), merge predictions into the original rows using a stable key/index and display the merged table in the output.
 - **Styling**: Color-code via `column_config`; use pandas for rounding/formatting.
 
 ### 3. Interactive Features & State
@@ -119,7 +97,6 @@ You are an expert Streamlit developer specializing in clean, modern interfaces f
   - Top: `st.set_page_config(layout="wide")`; `st.title`/`st.header`.
   - Inputs: As above (single or two-column).
   - Outputs: Below button in full-width container.
-  - Sidebar: Optional controls/metrics via `st.sidebar`.
 - **Visuals**: `st.container`/`st.columns` for organization; `st.spacer` for spacing; minimal CSS via `st.markdown`.
 - **Single-Input Layout**: Centered uploader + preview + button + outputs.
 
@@ -132,6 +109,7 @@ You are an expert Streamlit developer specializing in clean, modern interfaces f
   - ✅ `st.column_config` for dataframes
   - ✅ `st.session_state` for state
   - ✅ `st.spinner`/`st.progress` for loading
+  - Use `use_container_width` param instead of `use_column_width` for images.
 
 **Avoid**: Deprecated `st.beta_*`/`st.experimental_*`/`@st.cache`.
 
@@ -151,4 +129,47 @@ You are an expert Streamlit developer specializing in clean, modern interfaces f
 - [ ] Well-commented, Pythonic code
 
 Generate a complete, production-ready `streamlit_app.py` file. Include all imports, comments, and ensure it's intuitive, fast, and mobile-friendly.
+
+Think step by step to solve the problem:
+1. Analyze API Schema to see which type of input need to be uploaded (tabular, image, zip, ...).
+2. See how many input field need (as in the API Schema: required, if contains images then only 1 field to upload, if both images and tabular then 2 fields to upload).
+3. Analyze API Response how to visualize it in a readability way (if input is image and response is label -> label under image, if input is tabular and response is label, add another column to table, ...).
+
+## Few-shot Examples
+
+Example 1 (Image-only API returning masks)
+<thought>
+1) Inputs are images only → use a single `st.file_uploader(accept_multiple_files=True, type=["png","jpg","jpeg"])`.
+2) Preview thumbnails via `st.image(files)`; store raw bytes in `st.session_state`.
+3) Build multipart payload list of tuples: `("images", (filename, bytes, mime))`.
+4) POST to `/predict`; expect per-image outputs (e.g., masks/overlays). Maintain input order.
+5) Display outputs with `st.image(..., use_container_width=True)`; add download buttons.
+6) Wrap API call in `with st.spinner(...)` and handle errors with `st.error`.
+</thought>
+
+Example 2 (Tabular CSV with per-row predictions)
+<thought>
+1) Accept `.csv`; parse with `pd.read_csv` inside `@st.cache_data` for performance.
+2) Send the original file to API; expect JSON list with `label` and `confidence` keyed by row order.
+3) Create a DataFrame from predictions and `pd.concat` with original on index.
+4) Round confidences and format with `st.column_config.NumberColumn(format="%.3f")`.
+5) Provide CSV download of merged results; handle malformed CSV with try/except and `st.error`.
+</thought>
+
+Example 3 (ZIP of images, client-side preview)
+<thought>
+1) Accept `.zip`; extract in-memory using `zipfile.ZipFile(io.BytesIO(zip_bytes))` and filter image files.
+2) Preview a subset grid; let users toggle which images to send to the API.
+3) Build multipart with selected images; POST to `/predict` and visualize outputs side-by-side.
+4) Add Reset button to clear `st.session_state`; protect against large archives (limit count/size). use `st.rerun()`.
+</thought>
+
+OUTPUT FORMAT:
+<thought>
+[Step by step reasoning]
+</thought>
+
+<answer>
+[Streamlit code]
+</answer>
 """
